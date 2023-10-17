@@ -54,7 +54,7 @@
           schemas: searchFormSchema,
         },
         pagination: false,
-        striped: false,
+        striped: true,
         useSearchForm: true,
         showTableSetting: true,
         bordered: true,

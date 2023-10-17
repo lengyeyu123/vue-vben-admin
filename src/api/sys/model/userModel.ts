@@ -20,6 +20,12 @@ export interface LoginResultModel {
   roles: RoleInfo[];
 }
 
+export interface Tenant {
+  id: number;
+  code: string;
+  name: string;
+}
+
 /**
  * @description: Get user information return value
  */
@@ -35,4 +41,5 @@ export interface GetUserInfoModel {
   avatar: string;
   // 介绍
   desc?: string;
+  tenant: Tenant;
 }
