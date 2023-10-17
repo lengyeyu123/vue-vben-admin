@@ -61,6 +61,15 @@
         },
       },
       {
+        title: '参与评议职务',
+        dataIndex: 'loginPostList',
+        customRender: ({ record }) => {
+          return record.loginPostList
+            .map((item) => item.name + '(' + item.dept.name + ')')
+            .join(' ');
+        },
+      },
+      {
         title: '关联公司',
         dataIndex: 'deptSet',
         width: 200,
@@ -138,6 +147,7 @@
   }
 
   function handleSuccess() {
+    createMessage.success('设置成功');
     reload();
   }
 </script>

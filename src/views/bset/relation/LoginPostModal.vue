@@ -2,131 +2,139 @@
   <BasicModal
     v-bind="$attrs"
     @register="registerModal"
-    :title="getTitle"
+    title="请选择登录职务"
     @ok="handleSubmit"
     destroy-on-close
     default-fullscreen
   >
-    <BasicForm @register="registerForm" />
+    <BasicTable @register="registerTable" />
   </BasicModal>
 </template>
 <script lang="ts" setup>
-  import { ref, computed, unref } from 'vue';
+  import { h } from 'vue';
+  import { Tag } from 'ant-design-vue';
   import { BasicModal, useModalInner } from '/@/components/Modal';
-  import { BasicForm, useForm } from '/@/components/Form/index';
-  import { addOrUpdate } from '/@/api/bset/project';
   import { useMessage } from '/@/hooks/web/useMessage';
-  import {
-    getProjectTypeOptions,
-    getProjectCategoryOptions,
-    getStatusOptions,
-  } from '/@/enums/voteEnum';
   import { companyList } from '/@/api/bset/dept';
-
-  import { TreeSelect } from 'ant-design-vue';
+  import dayjs from 'dayjs';
+  import { BasicTable, useTable } from '/@/components/Table';
+  import { getLoginPostLevelOptions } from '/@/enums/voteEnum';
+  import { all } from '/@/api/bset/loginPost';
+  import { updateRelation } from '/@/api/bset/project';
 
   const emit = defineEmits(['register', 'success']);
 
-  const isUpdate = ref(true);
-
-  const [registerForm, { resetFields, setFieldsValue, validate }] = useForm({
-    labelWidth: 100,
-    baseColProps: { span: 24 },
-    schemas: [
+  const [registerTable, { getSelectRowKeys }] = useTable({
+    title: '登录职务列表',
+    api: all,
+    rowKey: 'id',
+    columns: [
       {
-        field: 'id',
-        label: 'id',
-        component: 'Input',
-        show: false,
+        title: '登录职务名称',
+        dataIndex: 'name',
+        width: 160,
       },
       {
-        field: 'name',
-        label: '项目名称',
-        component: 'Input',
-        required: true,
-      },
-      {
-        field: 'type',
-        label: '项目类型',
-        component: 'RadioButtonGroup',
-        componentProps: {
-          options: getProjectTypeOptions(),
-        },
-        required: true,
-      },
-      {
-        field: 'category',
-        label: '分类',
-        component: 'RadioButtonGroup',
-        componentProps: {
-          options: getProjectCategoryOptions(),
-        },
-        required: true,
-      },
-      {
-        field: 'companyIds',
-        label: '关联公司',
-        component: 'ApiTreeSelect',
-        required: true,
-        componentProps: {
-          api: companyList,
-          resultField: 'list',
-          labelField: 'name',
-          valueField: 'id',
-          childrenField: 'children',
-          multiple: true,
-          showCheckedStrategy: TreeSelect.SHOW_ALL,
+        title: '登录职务级别',
+        dataIndex: 'level',
+        width: 100,
+        customRender: ({ record }) => {
+          const level = record.level;
+          let color = 'red';
+          let text = '领导班子';
+          if (level === 0) {
+            color = 'red';
+            text = '领导班子';
+          } else if (level === 1) {
+            color = 'yellow';
+            text = '中层';
+          } else {
+            color = 'pink';
+            text = '员工';
+          }
+          return h(Tag, { color }, () => text);
         },
       },
       {
-        field: 'sort',
-        label: '排序',
-        component: 'InputNumber',
-        defaultValue: 0,
-      },
-      {
-        field: 'status',
-        label: '状态',
-        component: 'RadioButtonGroup',
-        defaultValue: 0,
-        componentProps: {
-          options: getStatusOptions(),
+        title: '所属公司',
+        dataIndex: 'deptId',
+        customRender: ({ record }) => {
+          return record.dept.name;
         },
-        required: true,
+        width: 100,
       },
       {
-        field: 'remark',
-        label: '备注',
-        component: 'InputTextArea',
+        title: '创建时间',
+        dataIndex: 'createTime',
+        width: 100,
+        format: (text) => {
+          return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
+        },
       },
     ],
-    showActionButtonGroup: false,
+    formConfig: {
+      labelWidth: 120,
+      baseColProps: { span: 6 },
+      showAdvancedButton: false,
+      actionColOptions: { span: 6 },
+      schemas: [
+        {
+          field: 'name',
+          label: '名称',
+          component: 'Input',
+        },
+        {
+          field: 'loginPostLevel',
+          label: '职务级别',
+          component: 'RadioButtonGroup',
+          componentProps: {
+            options: getLoginPostLevelOptions(),
+          },
+        },
+        {
+          field: 'deptId',
+          label: '所属公司',
+          component: 'ApiTreeSelect',
+          componentProps: {
+            api: companyList,
+            resultField: 'list',
+            labelField: 'name',
+            valueField: 'id',
+            childrenField: 'children',
+          },
+        },
+      ],
+    },
+    striped: true,
+    useSearchForm: true,
+    showTableSetting: true,
+    bordered: true,
+    showIndexColumn: true,
+    canResize: false,
+    rowSelection: {
+      type: 'checkbox',
+      preserveSelectedRowKeys: true,
+    },
+    pagination: false,
   });
 
+  let projectIdArr: Array<Number> = [];
   const [registerModal, { setModalProps, closeModal }] = useModalInner(async (data) => {
-    resetFields();
     setModalProps({ confirmLoading: false });
-    isUpdate.value = !!data?.isUpdate;
-
-    if (unref(isUpdate)) {
-      setFieldsValue({
-        ...data.record,
-      });
-      const companyIds = data.record.deptSet.map((item) => item.id);
-      setFieldsValue({ companyIds });
-    }
+    projectIdArr = data?.projectIdArr;
   });
-
-  const getTitle = computed(() => (!unref(isUpdate) ? '新增项目' : '编辑项目'));
 
   const { createMessage } = useMessage();
 
   async function handleSubmit() {
     try {
-      const values = await validate();
       setModalProps({ confirmLoading: true });
-      addOrUpdate(values).then(() => {
-        createMessage.success((isUpdate.value ? '编辑' : '新增') + '项目成功！');
+      const loginPostIdArr = getSelectRowKeys();
+      if (loginPostIdArr.length === 0) {
+        createMessage.error('请选择登录职务进行关联！');
+        return;
+      }
+      updateRelation({ loginPostIdArr, projectIdArr }).then(() => {
         closeModal();
         emit('success');
       });
