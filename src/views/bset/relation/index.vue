@@ -34,7 +34,7 @@
       {
         title: '项目名称',
         dataIndex: 'name',
-        width: 160,
+        width: 400,
       },
       {
         title: '项目类型',
@@ -63,10 +63,28 @@
       {
         title: '参与评议职务',
         dataIndex: 'loginPostList',
+
         customRender: ({ record }) => {
-          return record.loginPostList
-            .map((item) => item.name + '(' + item.dept.name + ')')
-            .join(' ');
+          const result = [] as any;
+          record.loginPostList.forEach((loginPost) => {
+            const deptName = loginPost.dept.name;
+            const deptIndex = result.map((item) => item.deptName).indexOf(deptName);
+            if (deptIndex === -1) {
+              result.push({ deptName, loginPostArr: [loginPost] });
+            } else {
+              result[deptIndex].loginPostArr.push(loginPost);
+            }
+          });
+          const pNodeArr = [] as any;
+          result.forEach((item) => {
+            const nodeArr = [h('div', { style: { color: 'red' } }, item.deptName + ':')] as any;
+            item.loginPostArr.forEach((obj) => {
+              nodeArr.push(h('span', { style: { paddingRight: '4px' } }, obj.name));
+            });
+            pNodeArr.push(nodeArr);
+          });
+
+          return h('div', {}, pNodeArr);
         },
       },
       {
@@ -92,7 +110,7 @@
       {
         title: '备注',
         dataIndex: 'remark',
-        width: 200,
+        width: 100,
       },
     ],
     formConfig: {

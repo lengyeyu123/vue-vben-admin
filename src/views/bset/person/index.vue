@@ -59,12 +59,14 @@
         title: '人员名称',
         dataIndex: 'name',
         width: 160,
-        align: 'left',
       },
       {
         title: '所属公司部门',
         dataIndex: 'deptId',
         width: 160,
+        customRender: ({ record }) => {
+          return record.dept.name;
+        },
       },
       {
         title: '所属岗位',

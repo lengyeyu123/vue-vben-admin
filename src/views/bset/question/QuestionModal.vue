@@ -35,18 +35,18 @@
         field: 'content',
         label: '试题内容',
         component: 'Input',
+        required: true,
       },
       {
         field: 'standard',
         label: '标准',
         component: 'InputTextArea',
-        required: true,
+        helpMessage: '多条数据请用#分割开，例如：第一条标准#第二条标准 不用写序号',
       },
       {
         field: 'category',
         label: '分类',
         component: 'Input',
-        required: true,
       },
       {
         field: 'objectiveFlag',
